@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerita Lo! — Home</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="page-home">
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="page-wrap">
+
+        <nav class="navbar">
+            <div class="nav-brand" onclick="window.location.href='home.html'">
+                <div class="brand-mark">📖</div>
+                <span class="brand-name">Cerita Lo!</span>
+            </div>
+            <div class="nav-right">
+                <div class="nav-pill">
+                    <div class="nav-avatar" id="nav-avatar">?</div>
+                    <span class="nav-username" id="nav-username"></span>
+                </div>
+                <button class="btn-logout" onclick="logout()">Keluar</button>
+            </div>
+        </nav>
+
+        <main class="home-content">
+            <div class="home-greeting">
+                <h2>Halo, <em id="greet-name">ma pren</em>! 👋</h2>
+                <p>habis ngapain sih lu hari ini?</p>
+            </div>
+
+            <div class="home-cards">
+                <a href="my-diary.html" class="home-card green">
+                    <div class="card-icon-wrap green">📚</div>
+                    <h3>Cerita Gua</h3>
+                    <p>Baca dan atur semua keseharian yang udah lu simpan</p>
+                </a>
+                <a href="make-diary.html" class="home-card purple">
+                    <div class="card-icon-wrap purple">✍️</div>
+                    <h3>Buat diary gue</h3>
+                    <p>Tulis sesuka hati lo dehh</p>
+                </a>
+            </div>
+        </main>
+
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const user = sessionStorage.getItem('dd_user');
+        if (!user) window.location.href = 'login.html';
+
+        document.getElementById('nav-avatar').textContent = user ? user.charAt(0).toUpperCase() : '?';
+        document.getElementById('nav-username').textContent = user || '';
+        document.getElementById('greet-name').textContent = user || 'Pengguna';
+
+        function logout() {
+            sessionStorage.removeItem('dd_user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+
+</html>

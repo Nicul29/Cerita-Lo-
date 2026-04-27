@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerita guee — Tulis Diary lu</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── tambahan khusus editor ── */
+
+        /* color swatches di toolbar */
+        .color-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .color-label {
+            font-size: 11px;
+            color: var(--ink-soft);
+            white-space: nowrap;
+            margin-right: 2px;
+        }
+
+        .swatch-wrap {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .swatch-wrap input[type="color"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 0;
+        }
+
+        .swatch-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            border: 1.5px solid rgba(0, 0, 0, .12);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            transition: transform .15s, box-shadow .15s;
+            background: white;
+            flex-shrink: 0;
+            pointer-events: none;
+            /* handled by the <input> above */
+        }
+
+        .swatch-wrap:hover .swatch-btn {
+            transform: scale(1.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+        }
+
+        /* quick preset swatches */
+        .preset-colors {
+            display: flex;
+            gap: 3px;
+        }
+
+        .preset-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(0, 0, 0, .1);
+            cursor: pointer;
+            transition: transform .15s, box-shadow .15s;
+            flex-shrink: 0;
+        }
+
+        .preset-dot:hover {
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+        }
+
+        /* make sure editor text always inherits the correct font & base color */
+        #diary-editor * {
+            font-family: 'DM Sans', sans-serif !important;
+        }
+
+        /* override any pasted color/font-size that sneaks in */
+        #diary-editor [style*="color: rgb(255"] {
+            color: inherit !important;
+        }
+
+        /* song-chip wrapper keeps z-index above writing-area */
+        .editor-topbar {
+            z-index: 100;
+        }
+
+        /* edit-song button distinct style so it's clearly a button */
+        .btn-edit-song {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 14px;
+            background: rgba(240, 232, 252, .9);
+            border: 1.5px solid var(--p-light);
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--p-deep);
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .btn-edit-song:hover {
+            background: var(--p-light);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body class="page-editor">
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- ══════════ FORM VIEW ══════════ -->
+    <div class="page-wrap" id="view-form">
+
+        <nav class="navbar">
+            <div class="nav-brand" onclick="window.location.href='home.html'" style="cursor:pointer;">
+                <div class="brand-mark">📖</div>
+                <span class="brand-name">Cerita Lo!</span>
+            </div>
+            <div class="nav-right">
+                <a href="home.html" class="btn-back">← Home</a>
+                <button class="btn-logout" onclick="logout()">Keluar</button>
+            </div>
+        </nav>
+
+        <div class="form-page-content">
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h2>✨ Diary baruu</h2>
+                    <p>isi detail sebelum nulis yaa!</p>
+                </div>
+
+                <div class="alert alert-error" id="form-err"></div>
+
+                <div class="form-group">
+                    <label for="nd-title">Judul Diary *</label>
+                    <input type="text" id="nd-title" placeholder="judul yang menggambarkan harimu…">
+                </div>
+                <div class="form-group">
+                    <label for="nd-song">🎵 Judul Lagu</label>
+                    <input type="text" id="nd-song" placeholder="lagu yang menemanimu hari ini…">
+                </div>
+                <div class="form-group">
+                    <label for="nd-url">🔗 Link YouTube Music</label>
+                    <input type="url" id="nd-url" placeholder="https://youtube.com/watch?v=…">
+                </div>
+                <div class="form-group">
+                    <label>🖼️ Icon Diary</label>
+                    <div class="upload-zone" id="upload-zone">
+                        <input type="file" id="nd-img" accept="image/*">
+                        <div id="upload-ph">
+                            <div class="upload-icon">📷</div>
+                            <p>Klik untuk pilih gambar</p>
+                            <small>JPG · PNG · GIF &nbsp;|&nbsp; Maks 5 MB</small>
+                        </div>
+                        <div class="upload-preview-wrap" id="upload-prev">
+                            <img id="prev-img" src="" alt="preview">
+                            <p>✓ Gambar terpilih — klik untuk ganti</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <a href="home.html" class="btn-secondary">Batal</a>
+                    <button class="btn-accent" id="btn-create">Mulai Menulis ✍️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ EDITOR VIEW ══════════ -->
+    <div class="page-wrap" id="view-editor" style="display:none;">
+
+        <!-- topbar -->
+        <div class="editor-topbar">
+            <div class="editor-topbar-left">
+                <button class="btn-back" id="btn-home-editor">← Home</button>
+                <span class="editor-diary-title" id="ed-title">Diary</span>
+                <a class="song-chip" id="song-chip" href="#" target="_blank" style="display:none;">
+                    🎵 <span id="song-chip-label">Lagu</span>
+                </a>
+            </div>
+            <div class="editor-topbar-right">
+                <!-- Tombol edit lagu dipindah ke sini agar tidak bertabrakan dengan toolbar -->
+                <button class="btn-edit-song" id="btn-edit-song-top">✏️ Edit Lagu</button>
+                <span class="saved-badge" id="saved-badge">✓ Tersimpan</span>
+                <button class="btn-save-main" id="btn-save-main">Simpan</button>
+            </div>
+        </div>
+
+        <!-- toolbar — semua tb-btn pakai mousedown+preventDefault agar fokus editor tidak hilang -->
+        <div class="editor-toolbar" id="editor-toolbar">
+
+            <!-- Format block -->
+            <select class="tb-select" id="tb-format">
+                <option value="">Format</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+                <option value="p">Paragraf</option>
+                <option value="blockquote">Kutipan</option>
+            </select>
+
+            <div class="tb-sep"></div>
+
+            <button class="tb-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+            <button class="tb-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+            <button class="tb-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+            <button class="tb-btn" data-cmd="strikeThrough" title="Coret"><s>S</s></button>
+
+            <div class="tb-sep"></div>
+
+            <button class="tb-btn" data-cmd="justifyLeft" title="Rata kiri">⬅</button>
+            <button class="tb-btn" data-cmd="justifyCenter" title="Tengah">↔</button>
+            <button class="tb-btn" data-cmd="justifyRight" title="Rata kanan">➡</button>
+
+            <div class="tb-sep"></div>
+
+            <button class="tb-btn" data-cmd="insertUnorderedList" title="Bullet">• —</button>
+            <button class="tb-btn" data-cmd="insertOrderedList" title="Nomor">1.</button>
+
+            <div class="tb-sep"></div>
+
+            <!-- Warna teks -->
+            <div class="color-group">
+                <span class="color-label">A</span>
+                <!-- preset cepat -->
+                <div class="preset-colors" id="text-presets"></div>
+                <!-- picker bebas -->
+                <div class="swatch-wrap" title="Pilih warna teks">
+                    <input type="color" id="pick-text-color" value="#18182a">
+                    <div class="swatch-btn">🎨</div>
+                </div>
+            </div>
+
+            <div class="tb-sep"></div>
+
+            <!-- Warna stabilo / highlight -->
+            <div class="color-group">
+                <span class="color-label">🖊</span>
+                <div class="preset-colors" id="hl-presets"></div>
+                <div class="swatch-wrap" title="Pilih warna stabilo">
+                    <input type="color" id="pick-hl-color" value="#fff176">
+                    <div class="swatch-btn">🖌️</div>
+                </div>
+                <!-- tombol hapus highlight -->
+                <button class="tb-btn" id="btn-clear-hl" title="Hapus stabilo"
+                    style="font-size:11px; width:auto; padding:0 6px;">✕HL</button>
+            </div>
+
+            <div class="tb-sep"></div>
+
+            <button class="tb-btn" data-cmd="undo" title="Undo">↩</button>
+            <button class="tb-btn" data-cmd="redo" title="Redo">↪</button>
+
+        </div><!-- /editor-toolbar -->
+
+        <div class="writing-area">
+            <div class="paper">
+                <div id="diary-editor" contenteditable="true" spellcheck="true"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ MODAL: edit song ══════════ -->
+    <div class="modal-bg" id="modal-song">
+        <div class="modal-box">
+            <h3>🎵 Edit Lagu</h3>
+            <p class="modal-sub">ganti lagu yang menemani diary ini</p>
+            <div class="form-group">
+                <label>Judul Lagu</label>
+                <input type="text" id="ms-title" placeholder="judul lagu…">
+            </div>
+            <div class="form-group">
+                <label>Link YouTube</label>
+                <input type="url" id="ms-url" placeholder="https://youtube.com/…">
+            </div>
+            <div class="btn-row">
+                <button class="btn-secondary" id="modal-cancel">Batal</button>
+                <button class="btn-accent" id="modal-save">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        /* ══════════════════════════════════════════
+           AUTH
+        ══════════════════════════════════════════ */
+        const currentUser = sessionStorage.getItem('dd_user');
+        if (!currentUser) window.location.href = 'login.html';
+
+        function logout() {
+            sessionStorage.removeItem('dd_user');
+            window.location.href = 'login.html';
+        }
+
+        /* ══════════════════════════════════════════
+           STORAGE
+        ══════════════════════════════════════════ */
+        function getDiaries() {
+            return JSON.parse(localStorage.getItem('dd_d_' + currentUser) || '[]');
+        }
+        function setDiaries(list) {
+            localStorage.setItem('dd_d_' + currentUser, JSON.stringify(list));
+        }
+
+        /* ══════════════════════════════════════════
+           IMAGE UPLOAD
+        ══════════════════════════════════════════ */
+        let imageData = null;
+        document.getElementById('nd-img').addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { toast('Gambar terlalu besar (maks 5 MB)'); return; }
+            const reader = new FileReader();
+            reader.onload = e => {
+                imageData = e.target.result;
+                document.getElementById('prev-img').src = imageData;
+                document.getElementById('upload-ph').style.display = 'none';
+                document.getElementById('upload-prev').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        /* ══════════════════════════════════════════
+           CREATE DIARY
+        ══════════════════════════════════════════ */
+        let activeDiaryId = null;
+        let autoTimer = null;
+        let savedRange = null; // simpan selection sebelum modal/picker terbuka
+
+        document.getElementById('btn-create').addEventListener('click', () => {
+            const title = document.getElementById('nd-title').value.trim();
+            if (!title) {
+                const el = document.getElementById('form-err');
+                el.textContent = 'Judul diary tidak boleh kosong!';
+                el.style.display = 'block';
+                return;
+            }
+            const diary = {
+                id: Date.now().toString(),
+                title,
+                songTitle: document.getElementById('nd-song').value.trim() || null,
+                songUrl: document.getElementById('nd-url').value.trim() || null,
+                imageData: imageData || null,
+                content: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            const list = getDiaries();
+            list.unshift(diary);
+            setDiaries(list);
+            openEditor(diary.id);
+        });
+
+        /* ══════════════════════════════════════════
+           OPEN EDITOR
+        ══════════════════════════════════════════ */
+        function openEditor(id) {
+            const list = getDiaries();
+            const diary = list.find(d => d.id === id);
+            if (!diary) return;
+            activeDiaryId = id;
+
+            document.getElementById('ed-title').textContent = diary.title;
+            document.getElementById('diary-editor').innerHTML = diary.content || '';
+
+            const chip = document.getElementById('song-chip');
+            if (diary.songTitle) {
+                chip.style.display = 'inline-flex';
+                document.getElementById('song-chip-label').textContent = diary.songTitle;
+                chip.href = diary.songUrl || '#';
+            } else {
+                chip.style.display = 'none';
+            }
+
+            document.getElementById('view-form').style.display = 'none';
+            document.getElementById('view-editor').style.display = 'flex';
+
+            clearInterval(autoTimer);
+            autoTimer = setInterval(() => saveDiary(true), 30000);
+
+            // fokus ke editor
+            setTimeout(() => document.getElementById('diary-editor').focus(), 50);
+        }
+
+        /* ══════════════════════════════════════════
+           SAVE / HOME
+        ══════════════════════════════════════════ */
+        function saveDiary(auto = false) {
+            if (!activeDiaryId) return;
+            const list = getDiaries();
+            const idx = list.findIndex(d => d.id === activeDiaryId);
+            if (idx === -1) return;
+            list[idx].content = document.getElementById('diary-editor').innerHTML;
+            list[idx].updatedAt = new Date().toISOString();
+            setDiaries(list);
+            const badge = document.getElementById('saved-badge');
+            badge.classList.add('show');
+            clearTimeout(window._sb);
+            window._sb = setTimeout(() => badge.classList.remove('show'), 2000);
+            if (!auto) toast('Diary disimpan! ✓');
+        }
+
+        function saveAndGoHome() {
+            saveDiary(true);
+            clearInterval(autoTimer);
+            window.location.href = 'home.html';
+        }
+
+        document.getElementById('btn-home-editor').addEventListener('click', saveAndGoHome);
+        document.getElementById('btn-save-main').addEventListener('click', () => saveDiary(false));
+
+        /* ══════════════════════════════════════════
+           TOOLBAR — mousedown preventDefault
+           supaya editor tidak kehilangan fokus/selection
+        ══════════════════════════════════════════ */
+        const toolbar = document.getElementById('editor-toolbar');
+
+        // Semua tb-btn pakai mousedown + preventDefault
+        toolbar.addEventListener('mousedown', function (e) {
+            const btn = e.target.closest('.tb-btn');
+            if (btn) {
+                e.preventDefault(); // KUNCI: jangan hilangkan fokus editor
+            }
+        });
+
+        // Handler klik untuk tb-btn dengan data-cmd
+        toolbar.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-cmd]');
+            if (btn) {
+                execCmd(btn.dataset.cmd);
+            }
+        });
+
+        // Format select
+        document.getElementById('tb-format').addEventListener('mousedown', e => e.stopPropagation());
+        document.getElementById('tb-format').addEventListener('change', function () {
+            execCmd('formatBlock', this.value);
+            this.value = '';
+            document.getElementById('diary-editor').focus();
+        });
+
+        function execCmd(cmd, val) {
+            document.getElementById('diary-editor').focus();
+            document.execCommand(cmd, false, val !== undefined ? val : null);
+        }
+
+        /* ══════════════════════════════════════════
+           PASTE — strip semua styling bawaan,
+           tempel sebagai plain text, lalu apply font
+        ══════════════════════════════════════════ */
+        document.getElementById('diary-editor').addEventListener('paste', function (e) {
+            e.preventDefault();
+
+            // Ambil teks polos dari clipboard
+            const plain = (e.clipboardData || window.clipboardData).getData('text/plain');
+            if (!plain) return;
+
+            // Bungkus dalam span yang sudah kita kontrol fontnya
+            const span = document.createElement('span');
+            span.style.fontFamily = "'DM Sans', sans-serif";
+            span.style.color = 'var(--ink, #18182a)';
+            span.style.fontWeight = 'inherit';
+            span.style.fontSize = 'inherit';
+
+            // Pertahankan baris baru → <br>
+            const lines = plain.split(/\r?\n/);
+            lines.forEach((line, i) => {
+                span.appendChild(document.createTextNode(line));
+                if (i < lines.length - 1) span.appendChild(document.createElement('br'));
+            });
+
+            // Sisipkan di posisi cursor
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(span);
+                range.setStartAfter(span);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        });
+
+        /* ══════════════════════════════════════════
+           WARNA TEKS — preset + picker bebas
+        ══════════════════════════════════════════ */
+        const TEXT_COLORS = [
+            { color: '#18182a', label: 'Hitam' },
+            { color: '#dc2626', label: 'Merah' },
+            { color: '#0f3d28', label: 'Hijau tua' },
+            { color: '#6535a8', label: 'Ungu' },
+            { color: '#1e40af', label: 'Biru' },
+            { color: '#d97706', label: 'Oranye' },
+        ];
+
+        const HIGHLIGHT_COLORS = [
+            { color: '#fef08a', label: 'Kuning' },
+            { color: '#bbf7d0', label: 'Hijau' },
+            { color: '#e9d5ff', label: 'Ungu muda' },
+            { color: '#fed7aa', label: 'Oranye muda' },
+            { color: '#bfdbfe', label: 'Biru muda' },
+            { color: '#fecdd3', label: 'Pink' },
+        ];
+
+        function buildPresets(containerId, colors, applyFn) {
+            const wrap = document.getElementById(containerId);
+            colors.forEach(({ color, label }) => {
+                const dot = document.createElement('div');
+                dot.className = 'preset-dot';
+                dot.title = label;
+                dot.style.background = color;
+                dot.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    applyFn(color);
+                });
+                wrap.appendChild(dot);
+            });
+        }
+
+        buildPresets('text-presets', TEXT_COLORS, applyTextColor);
+        buildPresets('hl-presets', HIGHLIGHT_COLORS, applyHighlight);
+
+        // Picker bebas — warna teks
+        const pickText = document.getElementById('pick-text-color');
+        pickText.addEventListener('mousedown', e => {
+            saveSelection(); // simpan selection sebelum picker terbuka
+        });
+        pickText.addEventListener('input', function () {
+            restoreSelection();
+            applyTextColor(this.value);
+        });
+        pickText.addEventListener('change', function () {
+            restoreSelection();
+            applyTextColor(this.value);
+        });
+
+        // Picker bebas — highlight
+        const pickHl = document.getElementById('pick-hl-color');
+        pickHl.addEventListener('mousedown', e => {
+            saveSelection();
+        });
+        pickHl.addEventListener('input', function () {
+            restoreSelection();
+            applyHighlight(this.value);
+        });
+        pickHl.addEventListener('change', function () {
+            restoreSelection();
+            applyHighlight(this.value);
+        });
+
+        // Hapus highlight
+        document.getElementById('btn-clear-hl').addEventListener('mousedown', e => e.preventDefault());
+        document.getElementById('btn-clear-hl').addEventListener('click', () => {
+            execCmd('hiliteColor', 'transparent');
+            // fallback: hapus background-color dari selection
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                try {
+                    document.execCommand('backColor', false, 'transparent');
+                } catch (_) { }
+            }
+        });
+
+        function applyTextColor(color) {
+            document.getElementById('diary-editor').focus();
+            document.execCommand('foreColor', false, color);
+        }
+
+        function applyHighlight(color) {
+            document.getElementById('diary-editor').focus();
+            // 'hiliteColor' lebih luas support-nya dari 'backColor'
+            const ok = document.execCommand('hiliteColor', false, color);
+            if (!ok) document.execCommand('backColor', false, color);
+        }
+
+        /* simpan & restore selection (biar picker tidak hilangkan selection) */
+        function saveSelection() {
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) {
+                savedRange = sel.getRangeAt(0).cloneRange();
+            }
+        }
+        function restoreSelection() {
+            if (!savedRange) return;
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+        }
+
+        /* ══════════════════════════════════════════
+           TOMBOL EDIT LAGU — pindah ke topbar,
+           tidak bergantung pada selection editor
+        ══════════════════════════════════════════ */
+        document.getElementById('btn-edit-song-top').addEventListener('click', openEditSong);
+
+        function openEditSong() {
+            if (!activeDiaryId) return;
+            const list = getDiaries();
+            const diary = list.find(d => d.id === activeDiaryId);
+            if (!diary) return;
+            document.getElementById('ms-title').value = diary.songTitle || '';
+            document.getElementById('ms-url').value = diary.songUrl || '';
+            document.getElementById('modal-song').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-song').classList.remove('open');
+            // kembalikan fokus ke editor
+            setTimeout(() => document.getElementById('diary-editor').focus(), 50);
+        }
+
+        function saveEditedSong() {
+            if (!activeDiaryId) return;
+            const list = getDiaries();
+            const idx = list.findIndex(d => d.id === activeDiaryId);
+            if (idx === -1) return;
+            const t = document.getElementById('ms-title').value.trim();
+            const u = document.getElementById('ms-url').value.trim();
+            list[idx].songTitle = t || null;
+            list[idx].songUrl = u || null;
+            setDiaries(list);
+            const chip = document.getElementById('song-chip');
+            if (t) {
+                chip.style.display = 'inline-flex';
+                document.getElementById('song-chip-label').textContent = t;
+                chip.href = u || '#';
+            } else {
+                chip.style.display = 'none';
+            }
+            closeModal();
+            toast('Lagu diperbarui! 🎵');
+        }
+
+        document.getElementById('modal-cancel').addEventListener('click', closeModal);
+        document.getElementById('modal-save').addEventListener('click', saveEditedSong);
+        document.getElementById('modal-song').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+
+        /* ══════════════════════════════════════════
+           TOAST
+        ══════════════════════════════════════════ */
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(window._tt);
+            window._tt = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        /* ══════════════════════════════════════════
+           BUKA EDITOR LANGSUNG (dari my-diary)
+        ══════════════════════════════════════════ */
+        const editId = sessionStorage.getItem('dd_edit_id');
+        if (editId) {
+            sessionStorage.removeItem('dd_edit_id');
+            openEditor(editId);
+        }
+    </script>
+</body>
+
+</html>

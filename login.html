@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerita Lo! — Masuk</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="page-auth">
+
+    <!-- dekoratif blob -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- ══════════ LOGIN ══════════ -->
+    <div class="page-wrap" id="view-login">
+        <div class="auth-center">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <div class="logo-mark">📖</div>
+                    <h1>Cerita Lo!</h1>
+                    <p class="tagline">Sung tulis aja</p>
+                </div>
+
+                <div class="alert alert-error" id="login-err"></div>
+
+                <div class="form-group">
+                    <label for="login-user">Username</label>
+                    <input type="text" id="login-user" placeholder="masukkan username…" autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="login-pass">Password</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+                </div>
+
+                <button class="btn-primary" id="btn-login">Masuk →</button>
+
+                <div class="auth-switch">
+                    Belum punya akun? <a id="to-register">Daftar sekarang</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ REGISTER ══════════ -->
+    <div class="page-wrap" id="view-register" style="display:none;">
+        <div class="auth-center">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <div class="logo-mark">💭</div>
+                    <h1>Buat Akun</h1>
+                    <p class="tagline">Mulai cerita skuy!🙌</p>
+                </div>
+
+                <div class="alert alert-error" id="reg-err"></div>
+                <div class="alert alert-success" id="reg-ok"></div>
+
+                <div class="form-group">
+                    <label for="reg-user">Username</label>
+                    <input type="text" id="reg-user" placeholder="pilih username unikmu…">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-pass">Password</label>
+                    <input type="password" id="reg-pass" placeholder="minimal 6 karakter…">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-confirm">Konfirmasi Password</label>
+                    <input type="password" id="reg-confirm" placeholder="ulangi password…">
+                </div>
+
+                <button class="btn-primary" id="btn-register">Buat Akun </button>
+
+                <div class="auth-switch">
+                    Lu blm ada akun? <a id="to-login">Login aja dulu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const getUsers = () => JSON.parse(localStorage.getItem('dd_users') || '{}');
+        const setUsers = u => localStorage.setItem('dd_users', JSON.stringify(u));
+
+        function showErr(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg; el.style.display = 'block';
+        }
+        function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            clearTimeout(window._tt);
+            window._tt = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        /* switch views */
+        document.getElementById('to-register').addEventListener('click', () => {
+            document.getElementById('view-login').style.display = 'none';
+            document.getElementById('view-register').style.display = 'flex';
+            hideAlert('reg-err'); hideAlert('reg-ok');
+        });
+        document.getElementById('to-login').addEventListener('click', () => {
+            document.getElementById('view-register').style.display = 'none';
+            document.getElementById('view-login').style.display = 'flex';
+            hideAlert('login-err');
+        });
+
+        /* LOGIN */
+        function doLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value;
+            hideAlert('login-err');
+            if (!u || !p) { showErr('login-err', 'Username dan password harus diisi!'); return; }
+            const users = getUsers();
+            if (!users[u]) { showErr('login-err', 'Username tidak ditemukan.'); return; }
+            if (users[u].pw !== btoa(p)) { showErr('login-err', 'Password salah!'); return; }
+            sessionStorage.setItem('dd_user', u);
+            window.location.href = 'home.html';
+        }
+        document.getElementById('btn-login').addEventListener('click', doLogin);
+        document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+        /* REGISTER */
+        function doRegister() {
+            const u = document.getElementById('reg-user').value.trim();
+            const p = document.getElementById('reg-pass').value;
+            const c = document.getElementById('reg-confirm').value;
+            hideAlert('reg-err'); hideAlert('reg-ok');
+            if (!u || !p || !c) { showErr('reg-err', 'Semua kolom harus diisi!'); return; }
+            if (u.length < 3) { showErr('reg-err', 'Username minimal 3 karakter.'); return; }
+            if (p.length < 6) { showErr('reg-err', 'Password minimal 6 karakter.'); return; }
+            if (p !== c) { showErr('reg-err', 'Password tidak cocok!'); return; }
+            const users = getUsers();
+            if (users[u]) { showErr('reg-err', 'Username sudah digunakan!'); return; }
+            users[u] = { pw: btoa(p), at: new Date().toISOString() };
+            setUsers(users);
+            document.getElementById('reg-ok').textContent = '✓ Akun berhasil dibuat! Kamu akan diarahkan ke halaman login...';
+            document.getElementById('reg-ok').style.display = 'block';
+            document.getElementById('reg-user').value = '';
+            document.getElementById('reg-pass').value = '';
+            document.getElementById('reg-confirm').value = '';
+            setTimeout(() => {
+                document.getElementById('view-register').style.display = 'none';
+                document.getElementById('view-login').style.display = 'flex';
+                hideAlert('reg-ok');
+            }, 1800);
+        }
+        document.getElementById('btn-register').addEventListener('click', doRegister);
+        document.getElementById('reg-confirm').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+    </script>
+</body>
+
+</html>

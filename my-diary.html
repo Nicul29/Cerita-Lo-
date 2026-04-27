@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dear Diary — My Diary</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="page-list">
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="page-wrap">
+
+        <nav class="navbar">
+            <div class="nav-brand" onclick="window.location.href='home.html'" style="cursor:pointer;">
+                <div class="brand-mark">📖</div>
+                <span class="brand-name">Cerita Lo!</span>
+            </div>
+            <div class="nav-right">
+                <div class="nav-pill">
+                    <div class="nav-avatar" id="nav-avatar">?</div>
+                    <span class="nav-username" id="nav-username"></span>
+                </div>
+                <button class="btn-logout" onclick="logout()">Keluar</button>
+            </div>
+        </nav>
+
+        <div class="list-content">
+            <div class="section-header">
+                <h2>📚 My Diary</h2>
+                <!-- tombol-tombol header dibungkus .section-header-btns agar gap konsisten -->
+                <div class="section-header-btns">
+                    <a href="make-diary.html" class="btn-accent">+ Diary Baru</a>
+                    <a href="home.html" class="btn-back">← Home</a>
+                </div>
+            </div>
+
+            <div id="list-wrap"></div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const currentUser = sessionStorage.getItem('dd_user');
+        if (!currentUser) window.location.href = 'login.html';
+
+        document.getElementById('nav-avatar').textContent = currentUser.charAt(0).toUpperCase();
+        document.getElementById('nav-username').textContent = currentUser;
+
+        function logout() {
+            sessionStorage.removeItem('dd_user');
+            window.location.href = 'login.html';
+        }
+
+        function getDiaries() {
+            return JSON.parse(localStorage.getItem('dd_d_' + currentUser) || '[]');
+        }
+
+        function emojiFor(title) {
+            const list = ['🌸', '🌿', '🍃', '🌙', '⭐', '🦋', '🌻', '🍀', '🌊', '🎋', '🍁', '🌺', '🔮', '🎐', '🪷'];
+            let h = 0;
+            for (let i = 0; i < title.length; i++) h = title.charCodeAt(i) + ((h << 5) - h);
+            return list[Math.abs(h) % list.length];
+        }
+
+        function esc(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function openDiary(id) {
+            sessionStorage.setItem('dd_edit_id', id);
+            window.location.href = 'make-diary.html';
+        }
+
+        function render() {
+            const diaries = getDiaries();
+            const wrap = document.getElementById('list-wrap');
+
+            if (diaries.length === 0) {
+                wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>Belum ada diary</h3>
+        <p>Yuk, mulai tulis diary pertamamu!</p>
+        <a href="make-diary.html" class="btn-accent">Buat Diary Pertama</a>
+      </div>`;
+                return;
+            }
+
+            const items = diaries.map(d => {
+                const date = new Date(d.updatedAt).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+                const thumb = d.imageData
+                    ? `<div class="diary-thumb"><img src="${d.imageData}" alt="icon"></div>`
+                    : `<div class="diary-thumb">${emojiFor(d.title)}</div>`;
+                const song = d.songTitle
+                    ? `<div class="diary-meta-song">🎵 ${esc(d.songTitle)}</div>`
+                    : `<div class="diary-meta-song" style="color:var(--ink-soft)">— tidak ada lagu —</div>`;
+
+                return `
+      <div class="diary-card" onclick="openDiary('${d.id}')">
+        ${thumb}
+        <div class="diary-meta">
+          <div class="diary-meta-title">${esc(d.title)}</div>
+          <div class="diary-meta-line"></div>
+          ${song}
+          <div class="diary-meta-date">✏️ Terakhir diedit: ${date}</div>
+        </div>
+        <div class="diary-arrow">›</div>
+      </div>`;
+            }).join('');
+
+            wrap.innerHTML = `<div class="diary-list">${items}</div>`;
+        }
+
+        render();
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            clearTimeout(window._tt);
+            window._tt = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+
+</html>
